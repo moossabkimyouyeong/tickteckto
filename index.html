@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>틱텍토 게임</title>
+
+<style>
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background:#0b1020;
+  color:#e8ecff;
+}
+
+.wrap{
+  max-width:720px;
+  margin:auto;
+  padding:20px;
+}
+
+.card{
+  background:#111733;
+  border:2px solid rgba(255,255,255,.15);
+  border-radius:20px;
+  padding:20px;
+}
+
+h1{
+  margin:0;
+  font-size:26px;
+  text-align:center;
+}
+
+.sub{
+  text-align:center;
+  opacity:.85;
+  margin-top:6px;
+  margin-bottom:16px;
+}
+
+/* ===== 보드 ===== */
+.board{
+  width:270px;
+  height:270px;
+  margin:0 auto 12px;
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  grid-template-rows:repeat(3, 1fr);
+  gap:6px;
+}
+
+/* ===== 칸 ===== */
+.cell{
+  background:#1a2147;
+  border:2px solid rgba(255,255,255,.25);
+  border-radius:14px;
+  font-size:56px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  user-select:none;
+  transition: background .15s ease, transform .12s ease;
+  animation: appear .25s ease;
+}
+
+/* 살짝 손맛 */
+.cell:nth-child(odd){ transform: rotate(-0.3deg); }
+.cell:nth-child(even){ transform: rotate(0.3deg); }
+
+.cell:hover{
+  background:#232c5c;
+}
+
+.cell:active{
+  transform: scale(.94);
+}
+
+/* 클릭 시 팝 애니메이션 */
+.cell.filled{
+  animation: pop .2s ease;
+}
+
+/* ===== 상태 ===== */
+.status{
+  text-align:center;
+  font-size:17px;
+  font-weight:700;
+  margin-bottom:12px;
+  transition: color .2s ease;
+}
+
+.status.win{
+  color:#4ade80;
+  animation: winPulse .6s ease infinite alternate;
+}
+
+/* ===== 버튼 ===== */
+button{
+  display:block;
+  margin:0 auto;
+  padding:12px 18px;
+  border-radius:14px;
+  border:0;
+  font-size:15px;
+  font-weight:800;
+  background:#ffffff;
+  color:#000;
+  cursor:pointer;
+  transition: transform .1s ease;
+}
+button:active{
+  transform: scale(.96);
+}
+
+/* ===== 후원 ===== */
+.support{
+  margin-top:18px;
+  padding:14px;
+  border-radius:16px;
+  background:#14321f;
+  border:2px solid rgba(34,197,94,.5);
+  font-size:14px;
+  line-height:1.6;
+}
+
+.footer{
+  margin-top:10px;
+  font-size:12px;
+  opacity:.7;
+  text-align:center;
+}
+
+/* ===== 애니메이션 정의 ===== */
+@keyframes pop{
+  0%{ transform: scale(.6); }
+  80%{ transform: scale(1.1); }
+  100%{ transform: scale(1); }
+}
+
+@keyframes appear{
+  from{ opacity:0; transform: scale(.8); }
+  to{ opacity:1; transform: scale(1); }
+}
+
+@keyframes winPulse{
+  from{ text-shadow:0 0 6px rgba(74,222,128,.4); }
+  to{ text-shadow:0 0 14px rgba(74,222,128,.9); }
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>틱텍토 게임</h1>
+    <div class="sub">❌ 플레이어 1 · ⭕ 플레이어 2</div>
+
+    <div class="board" id="board"></div>
+
+    <div class="status" id="status">플레이어 1 차례 (❌)</div>
+
+    <button onclick="resetGame()">다시 시작</button>
+
+    <!-- 후원 -->
+    <div class="support">
+      <strong>💚 초등학생 개발자 응원</strong><br><br>
+      이 게임이 재밌었다면<br>
+      후원으로 응원 부탁드립니다.<br><br>
+      <b>KB국민 604490-74-445627</b><br>
+      예금주: 임*혁
+    </div>
+
+    <div class="footer">
+      광고 없이 운영 중입니다 · 초등학생 개발
+    </div>
+  </div>
+</div>
+
+<script>
+const boardEl = document.getElementById("board");
+const statusEl = document.getElementById("status");
+
+let board, currentPlayer, gameOver;
+
+function init(){
+  board = Array(9).fill("");
+  currentPlayer = "❌";
+  gameOver = false;
+  boardEl.innerHTML = "";
+  statusEl.className = "status";
+  statusEl.textContent = "플레이어 1 차례 (❌)";
+
+  for(let i=0;i<9;i++){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.onclick = () => move(i, cell);
+    boardEl.appendChild(cell);
+  }
+}
+
+function move(i, cell){
+  if(gameOver || board[i]) return;
+
+  board[i] = currentPlayer;
+  cell.textContent = currentPlayer;
+  cell.classList.add("filled");
+
+  if(checkWin()){
+    statusEl.textContent =
+      currentPlayer === "❌"
+        ? "🎉 플레이어 1 승리!"
+        : "🎉 플레이어 2 승리!";
+    statusEl.classList.add("win");
+    gameOver = true;
+    return;
+  }
+
+  if(board.every(v=>v)){
+    statusEl.textContent = "😐 무승부";
+    gameOver = true;
+    return;
+  }
+
+  currentPlayer = currentPlayer === "❌" ? "⭕" : "❌";
+  statusEl.textContent =
+    currentPlayer === "❌"
+      ? "플레이어 1 차례 (❌)"
+      : "플레이어 2 차례 (⭕)";
+}
+
+function checkWin(){
+  const win = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  return win.some(p=>p.every(i=>board[i]===currentPlayer));
+}
+
+function resetGame(){
+  init();
+}
+
+init();
+</script>
+</body>
+</html>
